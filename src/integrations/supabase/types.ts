@@ -9,30 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      movies: {
+      watchlist: {
         Row: {
-          created_at: string
           id: string
-          link: string | null
-          title: string
-          type: string
+          created_at: string
           updated_at: string
+          title: string
+          original_title: string | null
+          type: string
+          link: string | null
+          poster_path: string | null
+          release_date: string | null
+          vote_average: number | null
+          genres: string[] | null
+          runtime: number | null
+          overview: string | null
         }
         Insert: {
-          created_at?: string
           id?: string
-          link?: string | null
-          title: string
-          type: string
+          created_at?: string
           updated_at?: string
+          title: string
+          original_title?: string | null
+          type: string
+          link?: string | null
+          poster_path?: string | null
+          release_date?: string | null
+          vote_average?: number | null
+          genres?: string[] | null
+          runtime?: number | null
+          overview?: string | null
         }
         Update: {
-          created_at?: string
           id?: string
-          link?: string | null
-          title?: string
-          type?: string
+          created_at?: string
           updated_at?: string
+          title?: string
+          original_title?: string | null
+          type?: string
+          link?: string | null
+          poster_path?: string | null
+          release_date?: string | null
+          vote_average?: number | null
+          genres?: string[] | null
+          runtime?: number | null
+          overview?: string | null
         }
         Relationships: []
       }

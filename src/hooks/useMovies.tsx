@@ -34,7 +34,8 @@ export const useMovies = () => {
         return;
       }
 
-      setMovies(data || []);
+      // Type assertion para garantir compatibilidade com nossa interface
+      setMovies((data || []) as Movie[]);
     } catch (error) {
       console.error('Erro ao carregar filmes:', error);
       toast({
@@ -69,7 +70,8 @@ export const useMovies = () => {
         return;
       }
 
-      setMovies(prev => [data, ...prev]);
+      // Type assertion para o dado retornado
+      setMovies(prev => [data as Movie, ...prev]);
       toast({
         title: "Sucesso!",
         description: `${movieData.type === 'movie' ? 'Filme' : 'Série'} adicionado à sua lista!`,

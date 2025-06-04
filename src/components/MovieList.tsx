@@ -5,12 +5,24 @@ import { useMovies } from "@/hooks/useMovies";
 import MovieItem from "./MovieItem";
 
 const MovieList = () => {
-  const { movies } = useMovies();
+  const { movies, loading } = useMovies();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredMovies = movies.filter(movie =>
     movie.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center animate-pulse">
+          <Search size={32} className="text-gray-400" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Carregando...</h2>
+        <p className="text-gray-600">Buscando seus filmes e séries</p>
+      </div>
+    );
+  }
 
   if (movies.length === 0) {
     return (

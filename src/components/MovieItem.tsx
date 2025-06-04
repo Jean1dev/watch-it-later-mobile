@@ -11,8 +11,8 @@ const MovieItem = ({ movie }: MovieItemProps) => {
   const { removeMovie } = useMovies();
   const { toast } = useToast();
 
-  const handleRemove = () => {
-    removeMovie(movie.id);
+  const handleRemove = async () => {
+    await removeMovie(movie.id);
     toast({
       title: "Removido!",
       description: `${movie.title} foi removido da sua lista.`,
@@ -49,7 +49,7 @@ const MovieItem = ({ movie }: MovieItemProps) => {
           </h3>
           
           <p className="text-sm text-gray-500 mt-1">
-            Adicionado em {new Date(movie.createdAt).toLocaleDateString('pt-BR')}
+            Adicionado em {new Date(movie.created_at).toLocaleDateString('pt-BR')}
           </p>
         </div>
 

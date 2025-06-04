@@ -1,49 +1,115 @@
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Movie {
   id: string;
   title: string;
   type: 'movie' | 'series';
   link?: string;
-  createdAt: string;
+  created_at: string;
 }
-
-const STORAGE_KEY = 'movielist-app-movies';
 
 export const useMovies = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Load movies from localStorage on mount
-  useEffect(() => {
-    const savedMovies = localStorage.getItem(STORAGE_KEY);
-    if (savedMovies) {
-      try {
-        setMovies(JSON.parse(savedMovies));
-      } catch (error) {
-        console.error('Error loading movies from localStorage:', error);
-        setMovies([]);
+  // Carregar filmes do Supabase
+  const loadMovies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('movies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao carregar filmes:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os filmes.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      setMovies(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar filmes:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os filmes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  // Save movies to localStorage whenever movies array changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
-  }, [movies]);
-
-  const addMovie = (movieData: Omit<Movie, 'id' | 'createdAt'>) => {
-    const newMovie: Movie = {
-      ...movieData,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-    };
-
-    setMovies(prev => [newMovie, ...prev]);
   };
 
-  const removeMovie = (id: string) => {
-    setMovies(prev => prev.filter(movie => movie.id !== id));
+  useEffect(() => {
+    loadMovies();
+  }, []);
+
+  const addMovie = async (movieData: Omit<Movie, 'id' | 'created_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('movies')
+        .insert([movieData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao adicionar filme:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível adicionar o filme.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setMovies(prev => [data, ...prev]);
+      toast({
+        title: "Sucesso!",
+        description: `${movieData.type === 'movie' ? 'Filme' : 'Série'} adicionado à sua lista!`,
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar filme:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o filme.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeMovie = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('movies')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erro ao remover filme:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível remover o filme.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setMovies(prev => prev.filter(movie => movie.id !== id));
+    } catch (error) {
+      console.error('Erro ao remover filme:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o filme.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getMovieById = (id: string) => {
@@ -52,6 +118,7 @@ export const useMovies = () => {
 
   return {
     movies,
+    loading,
     addMovie,
     removeMovie,
     getMovieById,

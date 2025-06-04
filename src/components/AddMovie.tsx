@@ -11,7 +11,7 @@ const AddMovie = () => {
   const { addMovie } = useMovies();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title.trim()) {
@@ -23,15 +23,10 @@ const AddMovie = () => {
       return;
     }
 
-    addMovie({
+    await addMovie({
       title: title.trim(),
       type,
       link: link.trim() || undefined,
-    });
-
-    toast({
-      title: "Sucesso!",
-      description: `${type === 'movie' ? 'Filme' : 'Série'} adicionado à sua lista!`,
     });
 
     // Reset form

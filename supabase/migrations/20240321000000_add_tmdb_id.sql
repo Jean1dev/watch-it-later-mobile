@@ -1,0 +1,2 @@
+ALTER TABLE watchlist
+ADD COLUMN tmdb_id INTEGER; 

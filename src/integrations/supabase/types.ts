@@ -24,6 +24,8 @@ export type Database = {
           genres: string[] | null
           runtime: number | null
           overview: string | null
+          watched: boolean
+          rating: number | null
         }
         Insert: {
           id?: string
@@ -39,6 +41,8 @@ export type Database = {
           genres?: string[] | null
           runtime?: number | null
           overview?: string | null
+          watched?: boolean
+          rating?: number | null
         }
         Update: {
           id?: string
@@ -54,6 +58,8 @@ export type Database = {
           genres?: string[] | null
           runtime?: number | null
           overview?: string | null
+          watched?: boolean
+          rating?: number | null
         }
         Relationships: []
       }

@@ -16,6 +16,9 @@ export interface Movie {
   genres?: string[];
   runtime?: number;
   overview?: string;
+  tmdb_id?: number;
+  watched?: boolean;
+  rating?: number;
 }
 
 export const useMovies = () => {
@@ -77,6 +80,7 @@ export const useMovies = () => {
           genres: tmdbData.genres.map((g: any) => g.name),
           runtime: movieData.type === 'movie' ? tmdbData.runtime : tmdbData.episode_run_time?.[0],
           overview: tmdbData.overview,
+          tmdb_id: tmdbData.id,
         };
 
         const { data, error } = await supabase
@@ -141,11 +145,39 @@ export const useMovies = () => {
     return movies.find(movie => movie.id === id);
   };
 
+  const markAsWatched = async (id: string, rating: number | null) => {
+    try {
+      const { error } = await supabase
+        .from('watchlist')
+        .update({ watched: true, rating })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setMovies(prev => prev.map(movie => 
+        movie.id === id ? { ...movie, watched: true, rating } : movie
+      ));
+
+      toast({
+        title: "Sucesso!",
+        description: "Filme marcado como assistido!",
+      });
+    } catch (error) {
+      console.error('Erro ao marcar filme como assistido:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar o filme como assistido.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     movies,
     loading,
     addMovie,
     removeMovie,
     getMovieById,
+    markAsWatched,
   };
 };

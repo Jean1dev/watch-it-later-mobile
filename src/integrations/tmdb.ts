@@ -27,6 +27,18 @@ interface TMDBSeries {
   overview: string;
 }
 
+interface StreamingProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+}
+
+interface StreamingProviders {
+  flatrate?: StreamingProvider[];
+  rent?: StreamingProvider[];
+  buy?: StreamingProvider[];
+}
+
 export const searchMovie = async (query: string): Promise<TMDBMovie | null> => {
   try {
     const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
@@ -78,6 +90,31 @@ export const searchSeries = async (query: string): Promise<TMDBSeries | null> =>
   } catch (error) {
     console.error('Error searching series:', error);
     return null;
+  }
+};
+
+export const getStreamingProviders = async (tmdbId: number, type: 'movie' | 'series'): Promise<StreamingProvider[]> => {
+  try {
+    const endpoint = type === 'movie' ? 'movie' : 'tv';
+    const response = await axios.get(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}/watch/providers`, {
+      params: {
+        api_key: TMDB_API_KEY
+      }
+    });
+
+    const providers = response.data.results.BR as StreamingProviders;
+    if (!providers) return [];
+
+    const allProviders = [
+      ...(providers.flatrate || []),
+      ...(providers.rent || []),
+      ...(providers.buy || [])
+    ];
+
+    return allProviders;
+  } catch (error) {
+    console.error('Error fetching streaming providers:', error);
+    return [];
   }
 };
 

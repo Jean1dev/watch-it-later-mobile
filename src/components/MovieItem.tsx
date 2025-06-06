@@ -97,7 +97,6 @@ const MovieItem = ({ movie }: MovieItemProps) => {
                 <ExternalLink size={18} />
               </button>
             )}
-            
             <button
               onClick={handleRemove}
               className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"

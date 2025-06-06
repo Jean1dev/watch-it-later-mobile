@@ -1,4 +1,3 @@
-
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { useMovies } from "@/hooks/useMovies";
@@ -8,9 +7,11 @@ const MovieList = () => {
   const { movies, loading } = useMovies();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredMovies = movies.filter(movie =>
-    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMovies = movies
+    .filter(movie => !movie.watched)
+    .filter(movie =>
+      movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   if (loading) {
     return (
@@ -40,7 +41,7 @@ const MovieList = () => {
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Minha Lista</h2>
-        <p className="text-gray-600">{movies.length} {movies.length === 1 ? 'item' : 'itens'} na sua lista</p>
+        <p className="text-gray-600">{filteredMovies.length} {filteredMovies.length === 1 ? 'item' : 'itens'} na sua lista</p>
       </div>
 
       {/* Search */}

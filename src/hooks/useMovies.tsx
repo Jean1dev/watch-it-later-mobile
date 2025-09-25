@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { searchMovie, searchSeries } from "@/integrations/tmdb";
+import { searchMovie, searchSeries, getStreamingProviders } from "@/integrations/tmdb";
 
 export interface Movie {
   id: string;
@@ -172,6 +172,18 @@ export const useMovies = () => {
     }
   };
 
+  const isAvailableInBrazil = async (movie: Movie): Promise<boolean> => {
+    if (!movie.tmdb_id) return false;
+    
+    try {
+      const providers = await getStreamingProviders(movie.tmdb_id, movie.type);
+      return providers.length > 0;
+    } catch (error) {
+      console.error('Error checking streaming availability:', error);
+      return false;
+    }
+  };
+
   return {
     movies,
     loading,
@@ -179,5 +191,6 @@ export const useMovies = () => {
     removeMovie,
     getMovieById,
     markAsWatched,
+    isAvailableInBrazil,
   };
 };

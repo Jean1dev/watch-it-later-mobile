@@ -3,6 +3,10 @@ import axios from 'axios';
 const TMDB_API_KEY = "3d22081cae0e925800702333596e462e";
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
+const axiosInstance = axios.create({
+  timeout: 6000
+});
+
 interface TMDBMovie {
   id: number;
   title: string;
@@ -41,7 +45,7 @@ interface StreamingProviders {
 
 export const searchMovie = async (query: string): Promise<TMDBMovie | null> => {
   try {
-    const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
+    const response = await axiosInstance.get(`${TMDB_BASE_URL}/search/movie`, {
       params: {
         api_key: TMDB_API_KEY,
         query,
@@ -51,7 +55,7 @@ export const searchMovie = async (query: string): Promise<TMDBMovie | null> => {
 
     if (response.data.results.length > 0) {
       const movieId = response.data.results[0].id;
-      const details = await axios.get(`${TMDB_BASE_URL}/movie/${movieId}`, {
+      const details = await axiosInstance.get(`${TMDB_BASE_URL}/movie/${movieId}`, {
         params: {
           api_key: TMDB_API_KEY,
           language: 'pt-BR'
@@ -68,7 +72,7 @@ export const searchMovie = async (query: string): Promise<TMDBMovie | null> => {
 
 export const searchSeries = async (query: string): Promise<TMDBSeries | null> => {
   try {
-    const response = await axios.get(`${TMDB_BASE_URL}/search/tv`, {
+    const response = await axiosInstance.get(`${TMDB_BASE_URL}/search/tv`, {
       params: {
         api_key: TMDB_API_KEY,
         query,
@@ -78,7 +82,7 @@ export const searchSeries = async (query: string): Promise<TMDBSeries | null> =>
 
     if (response.data.results.length > 0) {
       const seriesId = response.data.results[0].id;
-      const details = await axios.get(`${TMDB_BASE_URL}/tv/${seriesId}`, {
+      const details = await axiosInstance.get(`${TMDB_BASE_URL}/tv/${seriesId}`, {
         params: {
           api_key: TMDB_API_KEY,
           language: 'pt-BR'
@@ -96,7 +100,7 @@ export const searchSeries = async (query: string): Promise<TMDBSeries | null> =>
 export const getStreamingProviders = async (tmdbId: number, type: 'movie' | 'series'): Promise<StreamingProvider[]> => {
   try {
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const response = await axios.get(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}/watch/providers`, {
+    const response = await axiosInstance.get(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}/watch/providers`, {
       params: {
         api_key: TMDB_API_KEY
       }

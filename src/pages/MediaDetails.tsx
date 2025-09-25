@@ -93,7 +93,7 @@ export function MediaDetails() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/', { state: { goTo: 'list' } })}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft size={20} />

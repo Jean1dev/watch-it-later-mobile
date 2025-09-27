@@ -1,11 +1,19 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import MobileNav from "@/components/MobileNav";
 import AddMovie from "@/components/AddMovie";
 import MovieList from "@/components/MovieList";
 
 const Index = () => {
+  const location = useLocation();
   const [currentPage, setCurrentPage] = useState<'add' | 'list'>('add');
+
+  useEffect(() => {
+    if (location.state && (location.state as any).goTo === 'list') {
+      setCurrentPage('list');
+    }
+  }, [location.state]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">

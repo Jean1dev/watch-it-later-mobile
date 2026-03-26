@@ -31,11 +31,24 @@ interface TMDBSeries {
   overview: string;
 }
 
-interface StreamingProvider {
+export interface StreamingProvider {
   provider_id: number;
   provider_name: string;
   logo_path: string;
 }
+
+export type StreamingFilterId = 'netflix' | 'prime-video' | 'hbo' | 'apple';
+
+export const STREAMING_FILTER_OPTIONS: {
+  id: StreamingFilterId;
+  label: string;
+  providerIds: number[];
+}[] = [
+  { id: 'netflix', label: 'Netflix', providerIds: [8] },
+  { id: 'prime-video', label: 'Prime Video', providerIds: [119, 9] },
+  { id: 'hbo', label: 'HBO', providerIds: [1899, 384] },
+  { id: 'apple', label: 'Apple TV', providerIds: [350] },
+];
 
 interface StreamingProviders {
   flatrate?: StreamingProvider[];

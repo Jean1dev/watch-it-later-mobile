@@ -1,56 +1,91 @@
 import { Search, Filter } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMovies } from "@/hooks/useMovies";
-import { getStreamingProviders } from "@/integrations/tmdb";
+import {
+  getStreamingProviders,
+  STREAMING_FILTER_OPTIONS,
+  type StreamingFilterId,
+} from "@/integrations/tmdb";
 import MovieItem from "./MovieItem";
 
 const MovieList = () => {
   const { movies, loading } = useMovies();
   const [searchTerm, setSearchTerm] = useState("");
   const [showOnlyAvailableInBrazil, setShowOnlyAvailableInBrazil] = useState(false);
-  const [availableMovies, setAvailableMovies] = useState<Set<string>>(new Set());
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [streamingFilterIds, setStreamingFilterIds] = useState<Set<StreamingFilterId>>(
+    () => new Set()
+  );
+  const [movieProviderIds, setMovieProviderIds] = useState<Map<string, number[]>>(
+    () => new Map()
+  );
+  const [loadingProviders, setLoadingProviders] = useState(false);
+
+  const needsProviderData =
+    showOnlyAvailableInBrazil || streamingFilterIds.size > 0;
 
   useEffect(() => {
-    const checkAvailability = async () => {
-      if (!showOnlyAvailableInBrazil) {
-        setAvailableMovies(new Set());
+    const loadProviders = async () => {
+      if (!needsProviderData) {
+        setMovieProviderIds(new Map());
         return;
       }
 
-      setCheckingAvailability(true);
-      const availableSet = new Set<string>();
-      
-      const unwatchedMovies = movies.filter(movie => !movie.watched);
-      
+      setLoadingProviders(true);
+      const next = new Map<string, number[]>();
+      const unwatchedMovies = movies.filter((movie) => !movie.watched);
+
       for (const movie of unwatchedMovies) {
         if (!movie.tmdb_id) continue;
-        
+
         try {
           const providers = await getStreamingProviders(movie.tmdb_id, movie.type);
-          if (providers.length > 0) {
-            availableSet.add(movie.id);
-          }
+          const ids = [...new Set(providers.map((p) => p.provider_id))];
+          next.set(movie.id, ids);
         } catch (error) {
-          console.error('Error checking streaming availability:', error);
+          console.error("Error checking streaming availability:", error);
         }
       }
-      
-      setAvailableMovies(availableSet);
-      setCheckingAvailability(false);
+
+      setMovieProviderIds(next);
+      setLoadingProviders(false);
     };
 
-    checkAvailability();
-  }, [showOnlyAvailableInBrazil, movies]);
+    loadProviders();
+  }, [needsProviderData, movies]);
+
+  const wantedProviderIds = useMemo(() => {
+    const set = new Set<number>();
+    for (const fid of streamingFilterIds) {
+      const opt = STREAMING_FILTER_OPTIONS.find((o) => o.id === fid);
+      opt?.providerIds.forEach((id) => set.add(id));
+    }
+    return set;
+  }, [streamingFilterIds]);
+
+  const toggleStreamingFilter = (id: StreamingFilterId) => {
+    setStreamingFilterIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const filteredMovies = movies
-    .filter(movie => !movie.watched)
-    .filter(movie =>
+    .filter((movie) => !movie.watched)
+    .filter((movie) =>
       movie.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter(movie => 
-      !showOnlyAvailableInBrazil || availableMovies.has(movie.id)
-    );
+    .filter((movie) => {
+      if (!showOnlyAvailableInBrazil) return true;
+      const ids = movieProviderIds.get(movie.id);
+      return Boolean(ids && ids.length > 0);
+    })
+    .filter((movie) => {
+      if (streamingFilterIds.size === 0) return true;
+      const ids = movieProviderIds.get(movie.id) ?? [];
+      return ids.some((pid) => wantedProviderIds.has(pid));
+    });
 
   if (loading) {
     return (
@@ -96,20 +131,47 @@ const MovieList = () => {
           />
         </div>
         
-        <div className="flex items-center gap-2">
-          <Filter size={16} className="text-gray-500" />
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showOnlyAvailableInBrazil}
-              onChange={(e) => setShowOnlyAvailableInBrazil(e.target.checked)}
-              disabled={checkingAvailability}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
-            />
-            <span>
-              {checkingAvailability ? 'Verificando disponibilidade...' : 'Disponíveis no Brasil'}
-            </span>
-          </label>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-gray-500 shrink-0" />
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOnlyAvailableInBrazil}
+                onChange={(e) => setShowOnlyAvailableInBrazil(e.target.checked)}
+                disabled={loadingProviders}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
+              />
+              <span>
+                {showOnlyAvailableInBrazil && loadingProviders
+                  ? "Verificando disponibilidade..."
+                  : "Disponíveis no Brasil"}
+              </span>
+            </label>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 mb-2">Streaming</p>
+            <div className="flex flex-wrap gap-2">
+              {STREAMING_FILTER_OPTIONS.map((opt) => {
+                const active = streamingFilterIds.has(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggleStreamingFilter(opt.id)}
+                    disabled={loadingProviders}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 transition-colors disabled:opacity-50 ${
+                      active
+                        ? "border-purple-600 bg-purple-50 text-purple-800"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

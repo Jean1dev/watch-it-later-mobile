@@ -22,6 +22,29 @@ interface MediaDetails {
   rating?: number;
 }
 
+// Build a search/deep-link URL for each known provider using the title.
+// Falls back to JustWatch search (always works) for unknown providers.
+function buildProviderLink(providerId: number, title: string, fallback: string): string {
+  const q = encodeURIComponent(title);
+  const map: Record<number, string> = {
+    8:    `https://www.netflix.com/search?q=${q}`,
+    9:    `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${q}`,
+    119:  `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${q}`,
+    337:  `https://www.disneyplus.com/pt-br/search?q=${q}`,
+    384:  `https://play.max.com/search?q=${q}`,
+    1899: `https://play.max.com/search?q=${q}`,
+    350:  `https://tv.apple.com/search?term=${q}`,
+    531:  `https://www.paramountplus.com/br/search/${q}/`,
+    227:  `https://globoplay.globo.com/busca/?q=${q}`,
+    167:  `https://mubi.com/pt/br/search?q=${q}`,
+    3:    `https://play.google.com/store/search?q=${q}&c=movies`,
+    192:  `https://www.youtube.com/results?search_query=${q}`,
+    2:    `https://tv.apple.com/search?term=${q}`,
+    68:   `https://www.microsoft.com/pt-br/search/shop/movies?q=${q}`,
+  };
+  return map[providerId] || fallback || `https://www.justwatch.com/br/buscar?q=${q}`;
+}
+
 const CATEGORY_CONFIG = {
   flatrate: {
     label: 'Incluído na Assinatura',
@@ -49,7 +72,7 @@ const CATEGORY_CONFIG = {
   },
 } as const;
 
-function ProviderSection({ providers }: { providers: StreamingProvider[] }) {
+function ProviderSection({ providers, title }: { providers: StreamingProvider[]; title: string }) {
   const grouped = providers.reduce<Record<string, StreamingProvider[]>>((acc, p) => {
     const cat = p.category || 'flatrate';
     if (!acc[cat]) acc[cat] = [];
@@ -76,7 +99,7 @@ function ProviderSection({ providers }: { providers: StreamingProvider[] }) {
               {list.map((provider) => (
                 <a
                   key={`${provider.provider_id}-${cat}`}
-                  href={provider.link || '#'}
+                  href={buildProviderLink(provider.provider_id, title, provider.link || '')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`group flex flex-col items-center gap-1.5 p-2 rounded-xl border ${cfg.border} bg-gray-50 hover:bg-white hover:shadow-md transition-all duration-200 w-20`}
@@ -226,7 +249,7 @@ export function MediaDetails() {
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-3">Onde Assistir</h2>
             {streamingProviders.length > 0 ? (
-              <ProviderSection providers={streamingProviders} />
+              <ProviderSection providers={streamingProviders} title={media.title} />
             ) : (
               <div className="flex items-center gap-3 text-gray-500 bg-gray-100 px-4 py-4 rounded-xl border border-gray-200">
                 <AlertCircle size={20} className="shrink-0" />

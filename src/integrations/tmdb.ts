@@ -52,26 +52,6 @@ export const STREAMING_FILTER_OPTIONS: {
   { id: 'apple', label: 'Apple TV', providerIds: [350] },
 ];
 
-const PROVIDER_URLS: Record<number, string> = {
-  8: 'https://www.netflix.com/br',
-  9: 'https://www.primevideo.com',
-  119: 'https://www.primevideo.com',
-  337: 'https://www.disneyplus.com/pt-br',
-  384: 'https://www.max.com/br',
-  1899: 'https://www.max.com/br',
-  350: 'https://tv.apple.com',
-  531: 'https://www.paramountplus.com/br',
-  307: 'https://www.starzplay.com',
-  2: 'https://tv.apple.com',
-  3: 'https://play.google.com/store/movies',
-  7: 'https://www.vudu.com',
-  68: 'https://www.microsoft.com/pt-br/store/movies-and-tv',
-  619: 'https://www.starzplay.com',
-  167: 'https://www.mubi.com/pt/br',
-  258: 'https://www.claro.com.br/claro-video',
-  227: 'https://www.globoplay.globo.com',
-  307: 'https://www.starzplay.com',
-};
 
 interface StreamingProviders {
   link?: string;
@@ -152,7 +132,7 @@ export const getStreamingProviders = async (tmdbId: number, type: 'movie' | 'ser
       (list || []).map(p => ({
         ...p,
         category,
-        link: PROVIDER_URLS[p.provider_id] || juswatchLink,
+        link: juswatchLink,
       }));
 
     const seen = new Set<number>();

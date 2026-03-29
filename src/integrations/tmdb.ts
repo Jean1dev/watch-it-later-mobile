@@ -35,6 +35,8 @@ export interface StreamingProvider {
   provider_id: number;
   provider_name: string;
   logo_path: string;
+  category?: 'flatrate' | 'rent' | 'buy';
+  link?: string;
 }
 
 export type StreamingFilterId = 'netflix' | 'prime-video' | 'hbo' | 'apple';
@@ -50,7 +52,29 @@ export const STREAMING_FILTER_OPTIONS: {
   { id: 'apple', label: 'Apple TV', providerIds: [350] },
 ];
 
+const PROVIDER_URLS: Record<number, string> = {
+  8: 'https://www.netflix.com/br',
+  9: 'https://www.primevideo.com',
+  119: 'https://www.primevideo.com',
+  337: 'https://www.disneyplus.com/pt-br',
+  384: 'https://www.max.com/br',
+  1899: 'https://www.max.com/br',
+  350: 'https://tv.apple.com',
+  531: 'https://www.paramountplus.com/br',
+  307: 'https://www.starzplay.com',
+  2: 'https://tv.apple.com',
+  3: 'https://play.google.com/store/movies',
+  7: 'https://www.vudu.com',
+  68: 'https://www.microsoft.com/pt-br/store/movies-and-tv',
+  619: 'https://www.starzplay.com',
+  167: 'https://www.mubi.com/pt/br',
+  258: 'https://www.claro.com.br/claro-video',
+  227: 'https://www.globoplay.globo.com',
+  307: 'https://www.starzplay.com',
+};
+
 interface StreamingProviders {
+  link?: string;
   flatrate?: StreamingProvider[];
   rent?: StreamingProvider[];
   buy?: StreamingProvider[];
@@ -122,11 +146,28 @@ export const getStreamingProviders = async (tmdbId: number, type: 'movie' | 'ser
     const providers = response.data.results.BR as StreamingProviders;
     if (!providers) return [];
 
-    const allProviders = [
-      ...(providers.flatrate || []),
-      ...(providers.rent || []),
-      ...(providers.buy || [])
-    ];
+    const juswatchLink = providers.link || '';
+
+    const mapWithMeta = (list: StreamingProvider[] | undefined, category: 'flatrate' | 'rent' | 'buy') =>
+      (list || []).map(p => ({
+        ...p,
+        category,
+        link: PROVIDER_URLS[p.provider_id] || juswatchLink,
+      }));
+
+    const seen = new Set<number>();
+    const allProviders: StreamingProvider[] = [];
+    for (const p of [
+      ...mapWithMeta(providers.flatrate, 'flatrate'),
+      ...mapWithMeta(providers.rent, 'rent'),
+      ...mapWithMeta(providers.buy, 'buy'),
+    ]) {
+      const key = p.provider_id * 10 + (['flatrate','rent','buy'].indexOf(p.category!));
+      if (!seen.has(key)) {
+        seen.add(key);
+        allProviders.push(p);
+      }
+    }
 
     return allProviders;
   } catch (error) {

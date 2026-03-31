@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import { getImageUrl, getStreamingProviders } from '../integrations/tmdb';
-import { ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { getImageUrl, getStreamingProviders, StreamingProvider } from '../integrations/tmdb';
+import { ArrowLeft, Check, AlertCircle, Tv, ShoppingCart, Clock, ExternalLink } from 'lucide-react';
 import { useMovies } from '@/hooks/useMovies';
 import RatingModal from '@/components/RatingModal';
 
@@ -19,12 +19,111 @@ interface MediaDetails {
   type: 'movie' | 'series';
   tmdb_id?: number;
   watched?: boolean;
+  rating?: number;
 }
 
-interface StreamingProvider {
-  provider_id: number;
-  provider_name: string;
-  logo_path: string;
+// Build a search/deep-link URL for each known provider using the title.
+// Falls back to JustWatch search (always works) for unknown providers.
+function buildProviderLink(providerId: number, title: string, fallback: string): string {
+  const q = encodeURIComponent(title);
+  const map: Record<number, string> = {
+    8:    `https://www.netflix.com/search?q=${q}`,
+    9:    `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${q}`,
+    119:  `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${q}`,
+    337:  `https://www.disneyplus.com/pt-br/search?q=${q}`,
+    384:  `https://play.max.com/search?q=${q}`,
+    1899: `https://play.max.com/search?q=${q}`,
+    350:  `https://tv.apple.com/search?term=${q}`,
+    531:  `https://www.paramountplus.com/br/search/${q}/`,
+    227:  `https://globoplay.globo.com/busca/?q=${q}`,
+    167:  `https://mubi.com/pt/br/search?q=${q}`,
+    3:    `https://play.google.com/store/search?q=${q}&c=movies`,
+    192:  `https://www.youtube.com/results?search_query=${q}`,
+    2:    `https://tv.apple.com/search?term=${q}`,
+    68:   `https://www.microsoft.com/pt-br/search/shop/movies?q=${q}`,
+  };
+  return map[providerId] || fallback || `https://www.justwatch.com/br/buscar?q=${q}`;
+}
+
+const CATEGORY_CONFIG = {
+  flatrate: {
+    label: 'Incluído na Assinatura',
+    icon: Tv,
+    gradient: 'from-purple-500 to-blue-500',
+    badgeBg: 'bg-purple-100 text-purple-700',
+    border: 'border-purple-200',
+    iconColor: 'text-purple-500',
+  },
+  rent: {
+    label: 'Alugar',
+    icon: Clock,
+    gradient: 'from-amber-400 to-orange-500',
+    badgeBg: 'bg-amber-100 text-amber-700',
+    border: 'border-amber-200',
+    iconColor: 'text-amber-500',
+  },
+  buy: {
+    label: 'Comprar',
+    icon: ShoppingCart,
+    gradient: 'from-emerald-400 to-teal-500',
+    badgeBg: 'bg-emerald-100 text-emerald-700',
+    border: 'border-emerald-200',
+    iconColor: 'text-emerald-500',
+  },
+} as const;
+
+function ProviderSection({ providers, title }: { providers: StreamingProvider[]; title: string }) {
+  const grouped = providers.reduce<Record<string, StreamingProvider[]>>((acc, p) => {
+    const cat = p.category || 'flatrate';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(p);
+    return acc;
+  }, {});
+
+  const order: Array<'flatrate' | 'rent' | 'buy'> = ['flatrate', 'rent', 'buy'];
+
+  return (
+    <div className="space-y-4">
+      {order.map((cat) => {
+        const list = grouped[cat];
+        if (!list?.length) return null;
+        const cfg = CATEGORY_CONFIG[cat];
+        const Icon = cfg.icon;
+        return (
+          <div key={cat} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
+            <div className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${cfg.gradient} bg-opacity-10`}>
+              <Icon size={15} className="text-white" />
+              <span className="text-sm font-semibold text-white">{cfg.label}</span>
+            </div>
+            <div className="p-3 flex flex-wrap gap-3 bg-white">
+              {list.map((provider) => (
+                <a
+                  key={`${provider.provider_id}-${cat}`}
+                  href={buildProviderLink(provider.provider_id, title, provider.link || '')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`group flex flex-col items-center gap-1.5 p-2 rounded-xl border ${cfg.border} bg-gray-50 hover:bg-white hover:shadow-md transition-all duration-200 w-20`}
+                  title={`Assistir no ${provider.provider_name}`}
+                >
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm">
+                    <img
+                      src={getImageUrl(provider.logo_path)}
+                      alt={provider.provider_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-center text-gray-600 leading-tight line-clamp-2">
+                    {provider.provider_name}
+                  </span>
+                  <ExternalLink size={10} className={`${cfg.iconColor} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function MediaDetails() {
@@ -148,29 +247,13 @@ export function MediaDetails() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Onde Assistir</h2>
+            <h2 className="text-xl font-semibold mb-3">Onde Assistir</h2>
             {streamingProviders.length > 0 ? (
-              <div className="flex flex-wrap gap-4">
-                {streamingProviders.map((provider) => (
-                  <a
-                    key={provider.provider_id}
-                    href="#"
-                    className="flex items-center justify-center w-12 h-12 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <img
-                      src={getImageUrl(provider.logo_path)}
-                      alt={provider.provider_name}
-                      className="w-8 h-8 object-contain"
-                    />
-                  </a>
-                ))}
-              </div>
+              <ProviderSection providers={streamingProviders} title={media.title} />
             ) : (
-              <div className="flex items-center gap-2 text-gray-500 bg-gray-100 px-4 py-3 rounded-lg">
-                <AlertCircle size={20} />
-                <span>Não disponível em streaming no Brasil</span>
+              <div className="flex items-center gap-3 text-gray-500 bg-gray-100 px-4 py-4 rounded-xl border border-gray-200">
+                <AlertCircle size={20} className="shrink-0" />
+                <span className="text-sm">Não disponível em streaming no Brasil</span>
               </div>
             )}
           </div>

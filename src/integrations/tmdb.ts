@@ -35,6 +35,8 @@ export interface StreamingProvider {
   provider_id: number;
   provider_name: string;
   logo_path: string;
+  category?: 'flatrate' | 'rent' | 'buy';
+  link?: string;
 }
 
 export type StreamingFilterId = 'netflix' | 'prime-video' | 'hbo' | 'apple';
@@ -50,7 +52,9 @@ export const STREAMING_FILTER_OPTIONS: {
   { id: 'apple', label: 'Apple TV', providerIds: [350] },
 ];
 
+
 interface StreamingProviders {
+  link?: string;
   flatrate?: StreamingProvider[];
   rent?: StreamingProvider[];
   buy?: StreamingProvider[];
@@ -122,11 +126,28 @@ export const getStreamingProviders = async (tmdbId: number, type: 'movie' | 'ser
     const providers = response.data.results.BR as StreamingProviders;
     if (!providers) return [];
 
-    const allProviders = [
-      ...(providers.flatrate || []),
-      ...(providers.rent || []),
-      ...(providers.buy || [])
-    ];
+    const juswatchLink = providers.link || '';
+
+    const mapWithMeta = (list: StreamingProvider[] | undefined, category: 'flatrate' | 'rent' | 'buy') =>
+      (list || []).map(p => ({
+        ...p,
+        category,
+        link: juswatchLink,
+      }));
+
+    const seen = new Set<number>();
+    const allProviders: StreamingProvider[] = [];
+    for (const p of [
+      ...mapWithMeta(providers.flatrate, 'flatrate'),
+      ...mapWithMeta(providers.rent, 'rent'),
+      ...mapWithMeta(providers.buy, 'buy'),
+    ]) {
+      const key = p.provider_id * 10 + (['flatrate','rent','buy'].indexOf(p.category!));
+      if (!seen.has(key)) {
+        seen.add(key);
+        allProviders.push(p);
+      }
+    }
 
     return allProviders;
   } catch (error) {

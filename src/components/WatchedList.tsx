@@ -17,7 +17,9 @@ const StarRating = ({ rating }: { rating: number }) => (
 
 const WatchedList = () => {
   const { movies, loading } = useMovies();
-  const watched = movies.filter((m) => m.watched);
+  const watched = movies
+    .filter((m) => m.watched)
+    .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
 
   if (loading) {
     return (
